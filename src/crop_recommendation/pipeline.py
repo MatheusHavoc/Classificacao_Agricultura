@@ -18,15 +18,14 @@ class DataValidationError(ValueError):
 
 @dataclass(frozen=True)
 class ProjectConfig:
-    """Runtime configuration for the project pipeline."""
+    """Runtime configuration for the crop recommendation profiling pipeline."""
 
     project_name: str
     default_dataset: str
-    target_column: str | None = None
-    required_columns: tuple[str, ...] = ()
+    target_column: str = "label"
 
 
-CONFIG = ProjectConfig("Crop recommendation classification", "Crop_recommendation.csv", "label")
+CONFIG = ProjectConfig("Crop recommendation classification", "Crop_recommendation.csv")
 
 
 def normalize_column_name(column: object) -> str:
@@ -69,13 +68,30 @@ def numeric_summary(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame() if numeric_df.empty else numeric_df.describe().transpose().reset_index(names="column")
 
 
+def crop_class_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """Return crop-label distribution when the expected target column is available."""
+    if CONFIG.target_column not in df.columns:
+        LOGGER.info("Skipping crop class summary; missing optional column: %s", CONFIG.target_column)
+        return pd.DataFrame()
+    return (
+        df[CONFIG.target_column]
+        .value_counts(dropna=False)
+        .rename_axis(CONFIG.target_column)
+        .reset_index(name="records")
+        .sort_values("records", ascending=False)
+    )
+
+
 def run_pipeline(input_path: str | Path, output_dir: str | Path = "data/processed") -> dict[str, Any]:
-    """Run data-quality checks and write reusable artifacts."""
+    """Run local profiling and optional crop-label summaries for an available dataset."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    df = load_dataset(input_path, CONFIG.required_columns)
+    df = load_dataset(input_path)
     missing_summary(df).to_csv(output_path / "missing_summary.csv", index=False)
     numeric_summary(df).to_csv(output_path / "numeric_summary.csv", index=False)
+    class_summary = crop_class_summary(df)
+    if not class_summary.empty:
+        class_summary.to_csv(output_path / "crop_class_summary.csv", index=False)
     metrics = {"row_count": int(len(df)), "duplicate_rows": int(df.duplicated().sum())}
     (output_path / "dataset_metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     LOGGER.info("Pipeline completed for %s", CONFIG.project_name)
