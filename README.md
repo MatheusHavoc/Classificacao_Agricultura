@@ -1,10 +1,17 @@
 # Classificacao Agricultura - Crop Recommendation
 
-Python portfolio project for crop recommendation classification. The original notebook is preserved, and reusable project code now lives in `src/crop_recommendation/`.
+This repository contains the original crop recommendation notebook and a new lightweight Python profiling layer under `src/crop_recommendation/`.
 
-## Staff Data Engineer assessment
+## What this PR changes
 
-This is one of the stronger repositories because it has a complete supervised-learning storyline and interpretability with LIME. The engineering gaps were reproducibility, dependency management, tests and separation between exploration and reusable code.
+The notebook remains the source of the full supervised-learning workflow. The Python code added here does not retrain the models from the notebook. It provides:
+
+- local CSV/Excel ingestion with explicit errors;
+- normalized column names;
+- missing-value and numeric profiling outputs;
+- duplicate-row metrics;
+- an optional `crop_class_summary.csv` when the dataset includes `label`;
+- tests for ingestion and profiling behavior.
 
 ## Structure
 
@@ -20,7 +27,11 @@ This is one of the stronger repositories because it has a complete supervised-le
 └── README.md
 ```
 
-## How to run
+## Dataset requirement
+
+The expected local input is `data/raw/Crop_recommendation.csv`. That file is not committed. Without it, the pipeline cannot be executed end to end, although the code and tests can be reviewed.
+
+## How to run when the dataset is available
 
 ```bash
 python -m venv .venv
@@ -30,18 +41,20 @@ python -m pytest
 python -m crop_recommendation.pipeline --input data/raw/Crop_recommendation.csv --output data/processed
 ```
 
-## Pipeline capabilities
+## Outputs
 
-- CSV/Excel ingestion with clear errors.
-- Column normalization.
-- Missing-value summary.
-- Numeric profiling.
-- Duplicate-row metrics.
-- Output artifacts under `data/processed/`.
+Always generated when the input file exists:
+
+- `data/processed/missing_summary.csv`
+- `data/processed/numeric_summary.csv`
+- `data/processed/dataset_metrics.json`
+
+Generated only when the expected target column exists:
+
+- `data/processed/crop_class_summary.csv`
 
 ## Limitations and next steps
 
-- The dataset is not committed and must be provided locally.
-- Model training remains in the notebook and should be extracted in a later PR.
-- Expected schema and target-class checks should be formalized.
-- Metrics and model-selection criteria should be exported to reproducible reports.
+- Model training and LIME interpretation remain in the notebook.
+- This PR does not invent saved models or production inference.
+- Expected schema and target-class checks should be formalized later.
