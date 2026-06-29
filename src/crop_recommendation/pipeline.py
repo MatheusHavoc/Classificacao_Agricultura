@@ -33,7 +33,9 @@ def normalize_column_name(column: object) -> str:
     return str(column).strip().lower().replace(" ", "_").replace("-", "_")
 
 
-def load_dataset(path: str | Path, required_columns: Sequence[str] = ()) -> pd.DataFrame:
+def load_dataset(
+    path: str | Path, required_columns: Sequence[str] = ()
+) -> pd.DataFrame:
     """Load CSV or Excel data with validation and normalized column names."""
     dataset_path = Path(path)
     if not dataset_path.exists():
@@ -57,21 +59,34 @@ def load_dataset(path: str | Path, required_columns: Sequence[str] = ()) -> pd.D
 def missing_summary(df: pd.DataFrame) -> pd.DataFrame:
     """Return missing-value metrics by column."""
     total_rows = len(df)
-    summary = pd.DataFrame({"column": df.columns, "missing_count": df.isna().sum().values})
-    summary["missing_pct"] = 0.0 if total_rows == 0 else summary["missing_count"] / total_rows
-    return summary.sort_values(["missing_count", "column"], ascending=[False, True]).reset_index(drop=True)
+    summary = pd.DataFrame(
+        {"column": df.columns, "missing_count": df.isna().sum().values}
+    )
+    summary["missing_pct"] = (
+        0.0 if total_rows == 0 else summary["missing_count"] / total_rows
+    )
+    return summary.sort_values(
+        ["missing_count", "column"], ascending=[False, True]
+    ).reset_index(drop=True)
 
 
 def numeric_summary(df: pd.DataFrame) -> pd.DataFrame:
     """Return numeric descriptive statistics."""
     numeric_df = df.select_dtypes(include="number")
-    return pd.DataFrame() if numeric_df.empty else numeric_df.describe().transpose().reset_index(names="column")
+    return (
+        pd.DataFrame()
+        if numeric_df.empty
+        else numeric_df.describe().transpose().reset_index(names="column")
+    )
 
 
 def crop_class_summary(df: pd.DataFrame) -> pd.DataFrame:
     """Return crop-label distribution when the expected target column is available."""
     if CONFIG.target_column not in df.columns:
-        LOGGER.info("Skipping crop class summary; missing optional column: %s", CONFIG.target_column)
+        LOGGER.info(
+            "Skipping crop class summary; missing optional column: %s",
+            CONFIG.target_column,
+        )
         return pd.DataFrame()
     return (
         df[CONFIG.target_column]
@@ -82,7 +97,9 @@ def crop_class_summary(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def run_pipeline(input_path: str | Path, output_dir: str | Path = "data/processed") -> dict[str, Any]:
+def run_pipeline(
+    input_path: str | Path, output_dir: str | Path = "data/processed"
+) -> dict[str, Any]:
     """Run local profiling and optional crop-label summaries for an available dataset."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -93,9 +110,15 @@ def run_pipeline(input_path: str | Path, output_dir: str | Path = "data/processe
     if not class_summary.empty:
         class_summary.to_csv(output_path / "crop_class_summary.csv", index=False)
     metrics = {"row_count": int(len(df)), "duplicate_rows": int(df.duplicated().sum())}
-    (output_path / "dataset_metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    (output_path / "dataset_metrics.json").write_text(
+        json.dumps(metrics, indent=2), encoding="utf-8"
+    )
     LOGGER.info("Pipeline completed for %s", CONFIG.project_name)
-    return {"rows": metrics["row_count"], "duplicate_rows": metrics["duplicate_rows"], "outputs": str(output_path)}
+    return {
+        "rows": metrics["row_count"],
+        "duplicate_rows": metrics["duplicate_rows"],
+        "outputs": str(output_path),
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:

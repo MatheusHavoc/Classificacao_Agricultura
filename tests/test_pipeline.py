@@ -10,7 +10,9 @@ from crop_recommendation.pipeline import load_dataset, missing_summary, run_pipe
 
 def test_load_dataset_normalizes_columns(tmp_path):
     dataset = tmp_path / "sample.csv"
-    pd.DataFrame({"Soil PH": [6.1, None], "Label": ["rice", "maize"]}).to_csv(dataset, index=False)
+    pd.DataFrame({"Soil PH": [6.1, None], "Label": ["rice", "maize"]}).to_csv(
+        dataset, index=False
+    )
     df = load_dataset(dataset)
     assert list(df.columns) == ["soil_ph", "label"]
 
